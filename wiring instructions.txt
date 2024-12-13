@@ -1,0 +1,10 @@
+To connect the LCD to the Arduino, use 4 female-to-male jumper cables. Connect the GND pin on the I2C interface to the GND pin on the Arduino (the right GND pin to use is labeled 'POWER'). Connect the VCC pin to the 5V pin on the Arduino (right next to the GND pin). Then connect SDA and SCL to A4 and A5 respectively. Lastly, use either a cap or a female-to-female jumper cable to connect the last two pins together.
+
+
+Using male-to-male jumper cables, connect the negative power rail on the breadboard to the GND pin on the Arduino, then connect pin 5V to the positive power rail 
+
+Take 4 1kΩ resistors and connect them between the negative power rail and individual rows on the breadboard. Each resistor must have two spaces between them.
+
+Connect a push button to each resistor, and +5V from the positive power rail on the other side of each button. Then connect 4 jumper cables from pins 2, 3, 4, 5 and 6 to each resistor (preferably in order).
+
+Lastly, take a potentiometer and connect one end to the negative power rail, and another end to pin 5V or positive power rail using a jumper cable.  Then, connect a jumper cable between A0 and the middle pin of the potentiometer.
