@@ -19,17 +19,17 @@ enum Mode { MODE_ENCRYPTION, MODE_MORSE_CODE, MODE_ROTOR };
 Mode currentMode = MODE_ENCRYPTION;
 
 // Переменные для режима роторного шифрования
-char alphaValues[27] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_'};
-int rotor[3][27] = {
-    {5, 20, 19, 8, 7, 0, 21, 4, 3, 23, 11, 10, 25, 24, 15, 14, 22, 18, 17, 2, 1, 6, 16, 9, 13, 12, 8},
-    {20, 8, 11, 18, 12, 22, 23, 21, 1, 24, 17, 2, 4, 15, 25, 13, 19, 10, 3, 16, 0, 7, 5, 6, 9, 14, 7},
-    {9, 2, 1, 17, 22, 24, 16, 21, 15, 0, 23, 20, 14, 19, 12, 8, 6, 3, 25, 13, 11, 7, 4, 10, 5, 18, 12}
+char alphaValues[26] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'};
+int rotor[3][26] = {
+  { 5, 20, 19, 8, 7, 0, 21, 4, 3, 23, 11, 10, 25, 24, 15, 14, 22, 18, 17, 2, 1, 6, 16, 9, 13, 12 },
+  { 20, 8, 11, 18, 12, 22, 23, 21, 1, 24, 17, 2, 4, 15, 25, 13, 19, 10, 3, 16, 0, 7, 5, 6, 9, 14 },
+  { 9, 2, 1, 17, 22, 24, 16, 21, 15, 0, 23, 20, 14, 19, 12, 8, 6, 3, 25, 13, 11, 7, 4, 10, 5, 18 }
 };
 int reflector[26] = {9, 11, 8, 22, 14, 7, 21, 5, 2, 0, 20, 1, 17, 16, 4, 25, 13, 12, 23, 24, 10, 6, 3, 18, 19, 15};
 int rotorPos[3] = {0, 0, 0};
 
 // Переменные для режима Морзе
-#define BUZZER_PIN 2
+#define BUZZER_PIN 11
 #define LED_PIN 7
 #define CODE_BUTTON 3
 
@@ -44,10 +44,10 @@ unsigned long buttonPressTimes[5];
 int bptIndex;
 
 // Переменные для режима шифрования
-const int button1Pin = 8; // Измените на нужные пины
-const int button2Pin = 9;
-const int button3Pin = 10;
-const int button4Pin = 11;
+const int button1Pin = 2; // Измените на нужные пины
+const int button2Pin = 3;
+const int button3Pin = 5;
+const int button4Pin = 4;
 const int shiftAmount = 3;
 String inputText = "";
 
@@ -67,7 +67,7 @@ void setup() {
     
     lcd.init();
     lcd.backlight();
-    lcd.print("Mode: Encryption");
+    lcd.print("Mode: Caesar");
 }
 
 void loop() {
@@ -95,13 +95,16 @@ void updateDisplay() {
     lcd.clear();
     switch (currentMode) {
         case MODE_ENCRYPTION:
-            lcd.print("Mode: Encryption");
+            lcd.print("Mode: Caesar");
+            midiEncryption(); // Вызов функции для режима шифрования
             break;
         case MODE_MORSE_CODE:
             lcd.print("Mode: Morse Code");
+            midiMorse(); // Вызов функции для режима Морзе
             break;
         case MODE_ROTOR:
-            lcd.print("Mode: Rotor");
+            lcd.print("Mode: Enigma");
+            midiRotor(); // Вызов функции для режима роторного шифрования
             break;
     }
 }
@@ -109,7 +112,7 @@ void updateDisplay() {
 // Обработка режима шифрования
 void handleEncryptionMode() {
     int potValue = analogRead(potPin);
-    char inputChar = map(potValue, 0, 1000, 'A', 'Z'); // Map potentiometer value to letter A-Z
+    char inputChar = map(potValue, 0, 2000, 'A', 'Z'); // Map potentiometer value to letter A-Z
 
     if (digitalRead(button1Pin) == HIGH) {
         inputText.concat(inputChar);
@@ -243,7 +246,7 @@ bool isDash(unsigned long t) {
 char decodeMsg() {
     char c = '?';
     // Логика декодирования
-     if( isDot(buttonPressTimes[0]) && isDash(buttonPressTimes[1]) && buttonPressTimes[2] == 0 )
+    if( isDot(buttonPressTimes[0]) && isDash(buttonPressTimes[1]) && buttonPressTimes[2] == 0 )
 c = 'A';
 else if( isDash(buttonPressTimes[0]) && isDot(buttonPressTimes[1]) && isDot(buttonPressTimes[2]) && isDot(buttonPressTimes[3]) && buttonPressTimes[4]== 0 )
 c = 'B';
@@ -321,7 +324,8 @@ c = '0';
 // Обработка режима роторного шифрования
 void handleRotorMode() {
     printRotors();
-    int potIn = (int)floor((analogRead(potPin) * 27) / 1024);
+    int potIn = map(analogRead(potPin), 0, 1024, 0, 25); // Изменено на 1023 для полного диапазона
+    potIn = constrain(potIn, 0, 25);
     lcd.setCursor(0, 0);
     lcd.print(alphaValues[potIn]); // Показать выбранную букву
     lcd.print(" ");
@@ -358,12 +362,12 @@ void handleRotorMode() {
         rotorPos[0] -= 1;
         if (rotorPos[0] < 0) {
             rotorPos[1] -= 1;
-            rotorPos[0] = 25;
+            rotorPos[0] = 25; // Убедитесь, что значение в пределах 0-25
             if (rotorPos[1] < 0) {
                 rotorPos[2] -= 1;
-                rotorPos[1] = 25;
+                rotorPos[1] = 25; // Убедитесь, что значение в пределах 0-25
                 if (rotorPos[2] < 0) {
-                    rotorPos[2] = 25;
+                    rotorPos[2] = 25; // Убедитесь, что значение в пределах 0-25
                 }
             }
         }
@@ -393,13 +397,14 @@ void setRotorPos() {
     int potIn; // Объявляем переменную potIn здесь
     for (int i = 2; i >= 0; i--) {
         while (digitalRead(selectB) != HIGH) {
-            potIn = (int)floor((analogRead(potPin) * 27) / 1024); // Переменная теперь доступна
+            potIn = map(analogRead(potPin), 0, 1024, 0, 25); // Изменено на 1023 для полного диапазона
+            potIn = constrain(potIn, 0, 25);
             lcd.setCursor(14 - 3 * i, 0);
             if (potIn < 10) { lcd.print("0"); }
             lcd.print(potIn);
             delay(10);
         }
-        rotorPos[i] = potIn;
+        rotorPos[i] = potIn; // Устанавливаем значение ротора
         while (digitalRead(selectB) != LOW) {
             delay(100);
         }
@@ -410,7 +415,7 @@ int enigma(int inLetterVal) {
     // Прямой проход через роторы
     for (int i = 0; i <= 2; i++) {
         inLetterVal += rotorPos[i];
-        while (inLetterVal >= 27) inLetterVal -= 27;
+        while (inLetterVal >= 26) inLetterVal -= 26; // Убедитесь, что значение не превышает 25
         inLetterVal = rotor[i][inLetterVal];
     }
     // Рефлектор
@@ -419,7 +424,7 @@ int enigma(int inLetterVal) {
     for (int i = 2; i >= 0; i--) {
         inLetterVal = rotor[i][inLetterVal];
         inLetterVal -= rotorPos[i];
-        while (inLetterVal < 0) inLetterVal += 27;
+        while (inLetterVal < 0) inLetterVal += 26; // Убедитесь, что значение не меньше 0
     }
 
     // Поворот роторов
@@ -438,3 +443,149 @@ int enigma(int inLetterVal) {
 
     return inLetterVal;
 }
+
+// Функции для воспроизведения музыки
+void midiEncryption() {
+    tone(tonePin, 293, 195); // Замените код 1 на нужные ноты
+    delay(217);
+    tone(tonePin, 440, 195);
+    delay(217);
+    tone(tonePin, 440, 195);
+    delay(217);
+    tone(tonePin, 391, 97);
+    delay(108);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 391, 195);
+    delay(217);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 329, 97);
+    delay(108);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 329, 97);
+    delay(108);
+    tone(tonePin, 261, 195);
+    delay(217);
+    tone(tonePin, 293, 195);
+    delay(217);
+    tone(tonePin, 440, 195);
+    delay(217);
+    tone(tonePin, 440, 195);
+    delay(217);
+    tone(tonePin, 391, 97);
+    delay(108);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 391, 195);
+    delay(217);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 329, 97);
+    delay(108);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 329, 97);
+    delay(108);
+    tone(tonePin, 261, 97);
+    delay(108);
+    tone(tonePin, 293, 97);
+    delay(108);
+    tone(tonePin, 293, 195);
+    delay(217);
+    tone(tonePin, 440, 195);
+    delay(217);
+    tone(tonePin, 440, 195);
+    delay(217);
+    tone(tonePin, 391, 97);
+    delay(108);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 391, 195);
+    delay(217);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 329, 97);
+    delay(108);
+    tone(tonePin, 349, 97);
+    delay(108);
+    tone(tonePin, 329, 97);
+    delay(108);
+    tone(tonePin, 261, 97);
+    delay(108);
+    tone(tonePin, 261, 97);
+}
+
+void midiMorse() {
+    tone(tonePin, 987, 61); // Замените код 2 на нужные ноты
+    delay(67);
+    delay(67);
+    tone(tonePin, 987, 69);
+    delay(77);
+    delay(77);
+    tone(tonePin, 987, 61);
+    delay(67);
+    delay(174);
+    tone(tonePin, 987, 183);
+    delay(203);
+    delay(77);
+    tone(tonePin, 987, 174);
+    delay(193);
+    delay(77);
+    tone(tonePin, 987, 174);
+    delay(193);
+    delay(174);
+    tone(tonePin, 987, 61);
+    delay(67);
+    delay(77);
+    tone(tonePin, 987, 69);
+    delay(77);
+    delay(77);
+    tone(tonePin, 987, 61);
+    delay(67);
+}
+
+void midiRotor() {
+    delay(227); // Замените код 3 на нужные ноты
+    tone(tonePin, 1174, 204);
+    delay(227);
+    tone(tonePin, 1174, 204);
+    delay(227);
+    tone(tonePin, 987, 204);
+    delay(227);
+    tone(tonePin, 1046, 409);
+    delay(454);
+    tone(tonePin, 880, 306);
+    delay(340);
+    tone(tonePin, 783, 102);
+    delay(113);
+    tone(tonePin, 880, 204);
+    delay(227);
+    tone(tonePin, 1174, 204);
+    delay(227);
+    tone(tonePin, 1174, 204);
+    delay(227);
+    tone(tonePin, 1046, 204);
+    delay(227);
+    tone(tonePin, 987, 204);
+    delay(227);
+    tone(tonePin, 1174, 204);
+    delay(227);
+    tone(tonePin, 1174, 102);
+    delay(113);
+    tone(tonePin, 1046, 102);
+    delay(113);
+    tone(tonePin, 987, 204);
+    delay(227);
+    tone(tonePin, 1046, 409);
+    delay(454);
+    tone(tonePin, 880, 409);
+    delay(454);
+    tone(tonePin, 987, 204);
+    delay(227);
+    tone(tonePin, 783, 204);
+    delay(227);
+    tone(tonePin, 880, 818);
+    delay(909);
+    delay(227);
