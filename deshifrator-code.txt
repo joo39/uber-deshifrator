@@ -1,5 +1,8 @@
 
 
+
+
+
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
@@ -112,7 +115,7 @@ void updateDisplay() {
 // Обработка режима шифрования
 void handleEncryptionMode() {
     int potValue = analogRead(potPin);
-    char inputChar = map(potValue, 0, 2000, 'A', 'Z'); // Map potentiometer value to letter A-Z
+    char inputChar = map(potValue, 1010, 475, 'A', 'Z'); // Map potentiometer value to letter A-Z
 
     if (digitalRead(button1Pin) == HIGH) {
         inputText.concat(inputChar);
@@ -324,7 +327,7 @@ c = '0';
 // Обработка режима роторного шифрования
 void handleRotorMode() {
     printRotors();
-    int potIn = map(analogRead(potPin), 0, 1024, 0, 25); // Изменено на 1023 для полного диапазона
+    int potIn = map(analogRead(potPin), 900, 700, 0, 25); // Изменено на 700 для полного диапазона
     potIn = constrain(potIn, 0, 25);
     lcd.setCursor(0, 0);
     lcd.print(alphaValues[potIn]); // Показать выбранную букву
@@ -397,7 +400,7 @@ void setRotorPos() {
     int potIn; // Объявляем переменную potIn здесь
     for (int i = 2; i >= 0; i--) {
         while (digitalRead(selectB) != HIGH) {
-            potIn = map(analogRead(potPin), 0, 1024, 0, 25); // Изменено на 1023 для полного диапазона
+            potIn = map(analogRead(potPin), 900, 700, 0, 25); // Изменено на 700 для полного диапазона
             potIn = constrain(potIn, 0, 25);
             lcd.setCursor(14 - 3 * i, 0);
             if (potIn < 10) { lcd.print("0"); }
@@ -589,3 +592,4 @@ void midiRotor() {
     tone(tonePin, 880, 818);
     delay(909);
     delay(227);
+}
